@@ -1,9 +1,8 @@
 #include "TM4C123GH6PM.h"
 #include <stdio.h>
 
-#define two_second 1000000
-
 //prototypes
+void SystemInit(void);
 void Delay_ms(int n);
 void portDriveSetup();
 void forward();
@@ -15,7 +14,6 @@ uint32_t Measure_distanceRight(void);//right sensor calc
 void Timer0ACapture_init(void);
 void Timer3ACapture_init(void);
 void Delay_MicroSecond(int time);
-void Delay(unsigned long counter);
 void calculations();
 
 /* global variables to store and display distance in cm */
@@ -32,12 +30,12 @@ int main(void)
   while(1){
     forward();
     calculations(); 
-    if(distance < 15 && distance < distanceTwo){
+    if(distance < 18 && distance < distanceTwo){
       for(int i =0; i<125; i++){
         right();
       }
     }
-    else if(distanceTwo < 15 && distance > distanceTwo){
+    else if(distanceTwo < 18 && distance > distanceTwo){
       for(int j =0 ;j<125; j++){
         left();
       }
@@ -167,13 +165,6 @@ void Delay_MicroSecond(int time)
     }
 }
 
-void Delay(unsigned long counter)
-{
-	unsigned long i = 0;
-	
-	for(i=0; i< counter*1000; i++);
-}
-
 /* This function is called by the startup assembly code to perform system specific initialization tasks. */
 void SystemInit(void)
 {
@@ -256,8 +247,9 @@ void portDriveSetup(){
 
 void Delay_ms(int n)
 {
-    int a, b;
-    for(a = 0 ; a < n; a++)
-        for(b = 0; b < 3180; b++)
-            {} /* execute NOP for one milisecond */
+    SysTick->CTRL = 0;
+    SysTick->LOAD = (n*29000)-1;
+    SysTick->VAL = 0;
+    SysTick->CTRL = 0x00000005;
+    while ((SysTick->CTRL & 0x00010000)==0){}
 }
