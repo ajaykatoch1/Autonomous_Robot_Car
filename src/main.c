@@ -1,46 +1,59 @@
 #include "TM4C123GH6PM.h"
 #include <stdio.h>
 
-#define two_second 1000000
-
 //prototypes
-uint32_t Measure_distanceLeft(void);
-uint32_t Measure_distanceRight(void);
-void Timer0ACapture_init(void);
-void Timer3ACapture_init(void);
-void Delay_MicroSecond(int time);
-void Delay(unsigned long counter);
-//two = right else left
-
+void SystemInit(void);
 void Delay_ms(int n);
 void portDriveSetup();
 void forward();
 void backward();
 void right();
 void left();
+uint32_t Measure_distanceLeft(void);//left sensor calc
+uint32_t Measure_distanceRight(void);//right sensor calc
+void Timer0ACapture_init(void);
+void Timer3ACapture_init(void);
 void Delay_MicroSecond(int time);
+void calculations();
 
-//global variables
-uint32_t timeLeft;
-uint32_t timeRight;
-uint32_t distanceLeft;
-uint32_t distanceRight;
+/* global variables to store and display distance in cm */
+uint32_t time; //left sensor time 
+uint32_t timeTwo;//right sensor time
+uint32_t distance;//left sensor distance calculated
+uint32_t distanceTwo;//right sensor distance calculated
 
 int main(void)
 {
-  Timer0ACapture_init();
-  Timer3ACapture_init();  /*initialize Timer0A in edge edge time */
   portDriveSetup();
-  
+  Timer0ACapture_init();
+  Timer3ACapture_init();
   while(1){
-    timeLeft = Measure_distanceLeft(); //left sensor calc
-    timeRight = Measure_distanceRight(); //right sensor calc 
-    distanceLeft = (timeLeft * 10625)/10000000; //left sensor
-    distanceRight = (timeRight * 10625)/10000000;//right sensor
-    //printf("%d %d ", distanceLeft, distanceRight);
-    
-    
+    forward();
+    calculations(); 
+    if(distance < 18 && distance < distanceTwo){
+      for(int i =0; i<125; i++){
+        right();
+      }
+    }
+    else if(distanceTwo < 18 && distance > distanceTwo){
+      for(int j =0 ;j<125; j++){
+        left();
+      }
+    }
+    else{
+    for(int j =0 ;j<75; j++){
+        forward();
+      }
+      
+    }
   }	
+}
+
+void calculations(){
+  time = Measure_distanceLeft(); //left sensor time
+  timeTwo = Measure_distanceRight(); //right sensor time  
+  distance = (time * 10625)/10000000; //left sensor distance
+  distanceTwo = (timeTwo * 10625)/10000000;//right sensor distance, distance in cm
 }
 
 uint32_t Measure_distanceLeft(void)
@@ -152,11 +165,11 @@ void Delay_MicroSecond(int time)
     }
 }
 
-void Delay(unsigned long counter)
+/* This function is called by the startup assembly code to perform system specific initialization tasks. */
+void SystemInit(void)
 {
-	unsigned long i = 0;
-	
-	for(i=0; i< counter*1000; i++);
+    __disable_irq();    
+    SCB->CPACR |= 0x00F00000;
 }
 
 void backward(){
@@ -190,7 +203,7 @@ void forward(){
     Delay_ms(3);
 }
 
-void left(){
+void right(){
     GPIOD->DATA = 0x08;
     GPIOC->DATA = 0x80;
     Delay_ms(3);
@@ -205,7 +218,7 @@ void left(){
     Delay_ms(3);
 }
 
-void right(){
+void left(){
     GPIOD->DATA = 0x01;
     GPIOC->DATA = 0x10;
     Delay_ms(3);
@@ -226,7 +239,7 @@ void portDriveSetup(){
   GPIOC->DIR = 0xF0; 
   GPIOC->DEN = 0xF0; 
  
-  SYSCTL->RCGCGPIO |= (1<<3);
+  SYSCTL->RCGCGPIO |= (1<<3); //pd0-3
   GPIOD->DIR |= 0x0F; //PD0 is set for output
   GPIOD->DEN |= 0x0F; //Data enable for PD0
 
@@ -234,8 +247,9 @@ void portDriveSetup(){
 
 void Delay_ms(int n)
 {
-    int a, b;
-    for(a = 0 ; a < n; a++)
-        for(b = 0; b < 3180; b++)
-            {} /* execute NOP for one milisecond */
+    SysTick->CTRL = 0;
+    SysTick->LOAD = (n*29000)-1;
+    SysTick->VAL = 0;
+    SysTick->CTRL = 0x00000005;
+    while ((SysTick->CTRL & 0x00010000)==0){}
 }
