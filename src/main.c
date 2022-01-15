@@ -59,7 +59,7 @@ void calculations(){
 uint32_t Measure_distanceLeft(void)
 {
     int lastEdge, thisEdge;
-    GPIOA->DATA &= ~(1<<4); /* make trigger  pin high */
+    GPIOA->DATA &= ~(1<<4); /* make trigger  pin low */
     Delay_MicroSecond(10); /*10 seconds delay */
     GPIOA->DATA |= (1<<4); /* make trigger  pin high */
     Delay_MicroSecond(10); /*10 seconds delay */
@@ -81,7 +81,7 @@ uint32_t Measure_distanceLeft(void)
 uint32_t Measure_distanceRight(void)
 {
     int lastEdge, thisEdge;
-    GPIOA->DATA &= ~(1<<5); /* make trigger  pin high */
+    GPIOA->DATA &= ~(1<<5); /* make trigger  pin low */
     Delay_MicroSecond(10); /*10 seconds delay */
     GPIOA->DATA |= (1<<5); /* make trigger  pin high */
     Delay_MicroSecond(10); /*10 seconds delay */
